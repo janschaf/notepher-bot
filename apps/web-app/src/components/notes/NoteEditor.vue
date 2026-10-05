@@ -154,8 +154,9 @@ import IconListChecklist from '@/components/icons/IconListChecklist.vue'
 import IconHighlight from '@/components/icons/IconHighlight.vue'
 
 import { EditorContent, useEditor } from '@tiptap/vue-3'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import Focus from '@tiptap/extension-focus'
-import { History } from '@tiptap/extension-history'
+import { UndoRedo } from '@tiptap/extensions'
 import { Document } from '@tiptap/extension-document'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { Text } from '@tiptap/extension-text'
@@ -245,15 +246,43 @@ const editor = useEditor({
     TaskList,
     TaskItem.configure({
       nested: true,
-      // TODO: Replace when https://github.com/ueberdosis/tiptap/issues/3676 is fixed
-      // @ts-expect-error
-      onReadOnlyChecked: (_1, _2, html) => {
-        content.value = html
+      // In read-only mode tiptap toggles the <input> in the DOM but does not
+      // update the doc, and it reverts the checkbox unless this returns true.
+      // Re-sync every task item's `checked` attr from its live checkbox state
+      // (doc order and DOM order are both depth-first, so they zip 1:1), then
+      // persist the fresh HTML and return true so the tick sticks.
+      onReadOnlyChecked: () => {
+        const instance = editor.value
+        if (!instance) return false
+
+        const checkboxes = Array.from(
+          instance.view.dom.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+        )
+        const taskItems: { node: ProseMirrorNode; pos: number }[] = []
+        instance.state.doc.descendants((node, pos) => {
+          if (node.type.name === 'taskItem') taskItems.push({ node, pos })
+          return true
+        })
+        if (taskItems.length !== checkboxes.length) return false
+
+        let tr = instance.state.tr
+        let mutated = false
+        taskItems.forEach(({ node, pos }, index) => {
+          const domChecked = checkboxes[index].checked
+          if (node.attrs.checked !== domChecked) {
+            tr = tr.setNodeMarkup(pos, undefined, { ...node.attrs, checked: domChecked })
+            mutated = true
+          }
+        })
+        if (mutated) {
+          instance.view.dispatch(tr)
+          content.value = instance.getHTML()
+        }
+        return true
       }
-      // onReadOnlyChecked: () => true,
     }),
     Highlight,
-    History.configure({
+    UndoRedo.configure({
       depth: 10
     }),
     Focus.configure({
