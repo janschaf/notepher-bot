@@ -1,3 +1,3 @@
-export function stripTags(content: string) {
-  return content.replace(/(<([^>]+)>)/gi, ' ') || ''
+export function stripTags(content: string | null | undefined) {
+  return (content ?? '').replace(/(<([^>]+)>)/gi, ' ') || ''
 }
