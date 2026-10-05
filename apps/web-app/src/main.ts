@@ -4,7 +4,7 @@ import 'requestidlecallback-polyfill'
 import { createApp } from 'vue'
 
 import { createPinia } from 'pinia'
-import touchEvents from 'vue3-touch-events'
+import touchEvents, { type Vue3TouchEventsOptions } from 'vue3-touch-events'
 import { registerSW } from 'virtual:pwa-register'
 
 import App from './App.vue'
@@ -14,8 +14,7 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-// TODO: remove temporary types fix
-app.use<[]>(touchEvents)
+app.use<Vue3TouchEventsOptions>(touchEvents, {})
 
 const updateSW = registerSW({
   onNeedRefresh() {

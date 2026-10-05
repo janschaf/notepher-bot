@@ -155,7 +155,7 @@ import IconHighlight from '@/components/icons/IconHighlight.vue'
 
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import Focus from '@tiptap/extension-focus'
-import { History } from '@tiptap/extension-history'
+import { UndoRedo } from '@tiptap/extensions'
 import { Document } from '@tiptap/extension-document'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { Text } from '@tiptap/extension-text'
@@ -253,7 +253,7 @@ const editor = useEditor({
       // onReadOnlyChecked: () => true,
     }),
     Highlight,
-    History.configure({
+    UndoRedo.configure({
       depth: 10
     }),
     Focus.configure({
